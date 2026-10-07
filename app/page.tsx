@@ -24,7 +24,11 @@ export default async function Home() {
         <div className="flex gap-3 justify-end items-center">
 
 
-          <Image width="40" height="40" className="rounded-full" src={session.user.image} loading="eager" alt=""/>
+          <Image src={session.user.image ?? "/logo.png"}
+  width={40}
+  height={40}
+  className="rounded-full"
+  alt="" loading="eager"/>
           <h1>{session.user.name}</h1> 
           <LogoutButton/>
         </div>

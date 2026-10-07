@@ -67,8 +67,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       await getOrCreateUser({
         discordId,
-        username: profile.username ?? profile.global_name ?? "Usuário",
-        avatar: profile.image_url ?? null,
+        username: profile.username as string ?? profile.global_name as string ?? "Usuário",
+        avatar: profile.image_url as string ?? null,
       });
 
       // 3. Permite o login

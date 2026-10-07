@@ -6,8 +6,8 @@ export async function getOrCreateUser({
   avatar,
 }: {
   discordId: string;
-  username: string;
-  avatar?: string;
+  username: string ;
+  avatar?: string | null;
 }) {
   const result = await sql`
     INSERT INTO users (
