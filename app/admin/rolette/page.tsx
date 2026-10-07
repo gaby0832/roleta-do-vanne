@@ -5,6 +5,8 @@ import Image from "next/image";
 import LogoutButton from "../../components/LogoutButton";
 import RoundControls from "../../components/RoundControls";
 import AdminRoulette from "../../components/roulette/AdminRoulette";
+import { Form, Undo2, Undo2Icon } from "lucide-react";
+import Link from "next/link";
 
 export default async function RoletaPage() {
   const session = await auth();
@@ -18,7 +20,7 @@ export default async function RoletaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#181A1D] text-white">
+    <main className="bg-[#181A1D] text-white">
       {/* HEADER */}
 
       <header
@@ -42,9 +44,6 @@ export default async function RoletaPage() {
             alt=""
           />
 
-          <h1 className="font-bold">
-            Roleta
-          </h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -63,22 +62,24 @@ export default async function RoletaPage() {
             {session.user.name}
           </h2>
 
+          <Link className="inline-flex p-2 bg-[#FFFFFF] text-black cursor-pointer rounded-md" href="/"><Undo2Icon size="20" /></Link>
+
           <LogoutButton />
         </div>
       </header>
 
       {/* CONTEÚDO */}
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 p-6">
+      <div className="mx-auto flex w-full h-full max-w-[1600px] flex-col gap-8 p-6">
         {/* CONTROLE DA RODADA */}
 
-        <section className="rounded-2xl bg-[#202327] p-5">
+        <section className="rounded-2xl bg-[#202327] h-full p-5">
           <RoundControls />
         </section>
 
         {/* ROLETA */}
 
-        <section>
+        <section className="h-screen">
           <AdminRoulette />
         </section>
       </div>

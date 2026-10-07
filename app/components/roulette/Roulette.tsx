@@ -177,9 +177,21 @@ export default function Roulette({
           </div>
 
           {/* CENTRO */}
-          <div
-            className="
-              absolute
+          <button
+          onClick={spin}
+          disabled={spinning || items.length === 0}
+          className="
+            bg-white
+            text-sm
+            font-black
+            text-black
+            transition
+            hover:scale-105
+            hover:bg-gray-200
+            disabled:cursor-not-allowed
+            disabled:opacity-40
+            disabled:hover:scale-100
+            absolute
               left-1/2
               top-1/2
               z-20
@@ -194,37 +206,17 @@ export default function Roulette({
               border-4
               border-white/20
               bg-[#23262A]
-              text-2xl
+              text-sm
               shadow-xl
-            "
-          >
-            🎰
-          </div>
+              cursor-pointer
+          "
+        >
+          {spinning ? "Spinning" : "Spin"}
+        </button>
         </div>
 
         {/* BOTÃO */}
-        <button
-          onClick={spin}
-          disabled={spinning || items.length === 0}
-          className="
-            mt-8
-            rounded-xl
-            bg-white
-            px-10
-            py-4
-            text-lg
-            font-black
-            text-black
-            transition
-            hover:scale-105
-            hover:bg-gray-200
-            disabled:cursor-not-allowed
-            disabled:opacity-40
-            disabled:hover:scale-100
-          "
-        >
-          {spinning ? "GIRANDO..." : "GIRAR ROLETA"}
-        </button>
+        
 
         <p className="mt-3 text-sm text-gray-500">
           {items.length} mídias na roleta

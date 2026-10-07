@@ -3,6 +3,7 @@
 import { Film, Play } from "lucide-react";
 import { SubmitEvent, useState } from "react";
 import Input, { Midia } from "./Input";
+import ViewRound from "./ViewRound";
 
 export default function Form() {
   const [submitMode, setSubmitMode] = useState<string>("filme");
@@ -69,9 +70,12 @@ export default function Form() {
   }
 
   return (
-    <div className="w-1/2 flex flex-col">
+    <div className="w-full py-6 md:w-1/2 flex flex-col">
+
+      <ViewRound/>
 
       <div className="flex">
+
 
         <button
           type="button"
@@ -106,7 +110,7 @@ export default function Form() {
       </div>
 
       <form
-        className="px-5 py-5 flex flex-col w-full h-full bg-[#23262A] gap-5 rounded-b-lg rounded-tr-lg justify-center items-center"
+        className="px-5 py-5 flex flex-col w-full h-full bg-[#23262A] gap-5 rounded-b-lg justify-center items-center"
         onSubmit={handlerSubmit}
       >
 

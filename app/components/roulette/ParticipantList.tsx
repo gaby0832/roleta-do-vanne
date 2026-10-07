@@ -16,8 +16,8 @@ export default function ParticipantList({
   removingId,
 }: ParticipantListProps) {
   return (
-    <div className="w-full">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="w-full h-full flex flex-col items-center justify-center">
+      <div className="mb-3 w-full flex items-center justify-between">
         <h2 className="text-lg font-bold text-white">
           Participantes
         </h2>
@@ -27,7 +27,7 @@ export default function ParticipantList({
         </span>
       </div>
 
-      <div className="flex max-h-[500px] flex-col gap-2 overflow-y-auto">
+      <div className="flex w-full max-h-[500px] flex-col gap-2 overflow-y-auto">
         {participants.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-gray-500">
             Nenhum participante.
@@ -100,6 +100,9 @@ export default function ParticipantList({
             </div>
           ))
         )}
+
+
+        
       </div>
     </div>
   );

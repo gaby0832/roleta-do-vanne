@@ -162,7 +162,7 @@ export default function AdminRoulette() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-8 lg:flex-row">
+    <div className="flex w-full h-full flex-col gap-8 lg:flex-row">
       {/* ROLETA */}
 
       <div className="flex min-w-0 flex-1 items-center justify-center">
