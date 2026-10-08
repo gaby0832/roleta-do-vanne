@@ -21,12 +21,16 @@ export default function ResultModal({
     <div
       className="
         fixed
+        w-screen
+        h-screen
         inset-0
         z-[100]
         flex
         items-center
         justify-center
         bg-black/80
+        top-0
+        left-0
         p-4
         backdrop-blur-sm
       "

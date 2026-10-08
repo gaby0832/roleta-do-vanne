@@ -59,8 +59,6 @@ export async function GET() {
       INNER JOIN rounds r
         ON r.id = s.round_id
 
-      WHERE r.status = 'OPEN'
-
       ORDER BY s.created_at ASC
     `;
 

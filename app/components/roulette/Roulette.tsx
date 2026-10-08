@@ -9,6 +9,8 @@ type RouletteProps = {
   participants: Participant[];
 };
 
+const SPIN_DURATION = 10000;
+
 export default function Roulette({
   participants,
 }: RouletteProps) {
@@ -18,13 +20,6 @@ export default function Roulette({
 
   /*
    * Cada pessoa gera duas opções.
-   *
-   * Exemplo:
-   *
-   * Gaby -> Filme A
-   * Gaby -> Filme B
-   * João -> Filme C
-   * João -> Filme D
    */
   const items = useMemo<RouletteItem[]>(() => {
     return participants.flatMap((participant) => [
@@ -35,7 +30,6 @@ export default function Roulette({
         avatar: participant.avatar,
         media: participant.midia1,
       },
-
       {
         id: `${participant.id}-2`,
         submissionId: participant.id,
@@ -48,7 +42,8 @@ export default function Roulette({
 
   const sliceCount = items.length;
 
-  const sliceAngle = sliceCount > 0 ? 360 / sliceCount : 360;
+  const sliceAngle =
+    sliceCount > 0 ? 360 / sliceCount : 360;
 
   function spin() {
     if (spinning || items.length === 0) {
@@ -59,10 +54,7 @@ export default function Roulette({
     setSpinning(true);
 
     /*
-     * Escolhemos o vencedor ANTES da animação.
-     *
-     * Assim a roleta visualmente termina exatamente
-     * na mídia que será mostrada no modal.
+     * Escolhe o vencedor antes da animação.
      */
     const winnerIndex = Math.floor(
       Math.random() * items.length
@@ -71,32 +63,55 @@ export default function Roulette({
     const selected = items[winnerIndex];
 
     /*
-     * Queremos que o centro da fatia selecionada
-     * fique apontando para o topo.
+     * O CENTRO da fatia selecionada.
+     *
+     * 2 itens:
+     *
+     * item 0 = 90°  -> direita
+     * item 1 = 270° -> esquerda
+     *
+     * A seta está no topo.
      */
     const targetAngle =
-      winnerIndex * sliceAngle + sliceAngle / 2;
+      winnerIndex * sliceAngle +
+      sliceAngle / 2;
 
     /*
-     * Algumas voltas completas para dar a sensação
-     * de roleta girando.
+     * Muitas voltas antes de parar.
      */
-    const fullSpins = 6 * 360;
+    const fullSpins = 8 * 360;
+
+    /*
+     * Rotação atual normalizada.
+     */
+    const currentRotation =
+      ((rotation % 360) + 360) % 360;
+
+    /*
+     * Queremos levar o centro da fatia
+     * vencedora para o topo.
+     */
+    let correction =
+      -targetAngle - currentRotation;
+
+    correction =
+      ((correction % 360) + 360) % 360;
 
     const finalRotation =
       rotation +
       fullSpins +
-      (360 - targetAngle);
+      correction;
 
     setRotation(finalRotation);
 
     /*
-     * Precisa ser igual ao tempo da transition no CSS.
+     * Tem que ser exatamente igual
+     * à duração da animação.
      */
     setTimeout(() => {
       setSpinning(false);
       setWinner(selected);
-    }, 5000);
+    }, SPIN_DURATION);
   }
 
   if (items.length === 0) {
@@ -107,7 +122,8 @@ export default function Roulette({
         </p>
 
         <p className="mt-2 text-sm text-gray-500">
-          Aguarde os participantes enviarem suas recomendações.
+          Aguarde os participantes enviarem suas
+          recomendações.
         </p>
       </div>
     );
@@ -116,15 +132,21 @@ export default function Roulette({
   return (
     <>
       <div className="flex w-full flex-col items-center">
-        {/* ROLETTA */}
+        {/* ========================================= */}
+        {/* ROLETA                                    */}
+        {/* ========================================= */}
+
         <div className="relative aspect-square w-full max-w-[650px]">
-          {/* SETA */}
+          {/* ======================================= */}
+          {/* SETA                                    */}
+          {/* ======================================= */}
+
           <div
             className="
               absolute
               left-1/2
               top-[-8px]
-              z-30
+              z-40
               -translate-x-1/2
             "
           >
@@ -143,7 +165,10 @@ export default function Roulette({
             />
           </div>
 
-          {/* RODA */}
+          {/* ======================================= */}
+          {/* RODA                                    */}
+          {/* ======================================= */}
+
           <div
             className="
               absolute
@@ -157,13 +182,88 @@ export default function Roulette({
             "
             style={{
               transform: `rotate(${rotation}deg)`,
+
               transition: spinning
-                ? "transform 5s cubic-bezier(0.12, 0.8, 0.2, 1)"
+                ? `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.8, 0.2, 1)`
                 : "none",
             }}
           >
+            {/* ===================================== */}
+            {/* DIVISÕES DA PIZZA                    */}
+            {/* ===================================== */}
+
+            <svg
+              className="
+                pointer-events-none
+                absolute
+                inset-0
+                z-30
+                h-full
+                w-full
+              "
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {items.map((item, index) => {
+                /*
+                 * A divisão é a BORDA entre duas fatias.
+                 *
+                 * Não adicionamos metade do ângulo aqui.
+                 *
+                 * 2 itens:
+                 *
+                 * index 0 = 0°
+                 * index 1 = 180°
+                 *
+                 * As duas linhas formam uma única
+                 * linha vertical passando pelo centro.
+                 */
+
+                const angle =
+                  index * sliceAngle;
+
+                const radians =
+                  (angle * Math.PI) / 180;
+
+                const x =
+                  50 +
+                  50 * Math.sin(radians);
+
+                const y =
+                  50 -
+                  50 * Math.cos(radians);
+
+                return (
+                  <line
+                    key={`separator-${item.id}`}
+                    x1="50"
+                    y1="50"
+                    x2={x}
+                    y2={y}
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth="0.35"
+                  />
+                );
+              })}
+            </svg>
+
+            {/* ===================================== */}
+            {/* CONTEÚDO DAS FATIAS                  */}
+            {/* ===================================== */}
+
             {items.map((item, index) => {
-              const angle = index * sliceAngle;
+              /*
+               * O conteúdo fica no CENTRO da fatia.
+               *
+               * 2 itens:
+               *
+               * item 0 = 90°  -> direita
+               * item 1 = 270° -> esquerda
+               */
+
+              const angle =
+                index * sliceAngle +
+                sliceAngle / 2;
 
               return (
                 <WheelItem
@@ -176,30 +276,26 @@ export default function Roulette({
             })}
           </div>
 
-          {/* CENTRO */}
+          {/* ======================================= */}
+          {/* BOTÃO CENTRAL                           */}
+          {/* ======================================= */}
+
           <button
-          onClick={spin}
-          disabled={spinning || items.length === 0}
-          className="
-            bg-white
-            text-sm
-            font-black
-            text-black
-            transition
-            hover:scale-105
-            hover:bg-gray-200
-            disabled:cursor-not-allowed
-            disabled:opacity-40
-            disabled:hover:scale-100
-            absolute
+            onClick={spin}
+            disabled={
+              spinning || items.length === 0
+            }
+            className="
+              absolute
               left-1/2
               top-1/2
-              z-20
+              z-40
               flex
               h-20
               w-20
               -translate-x-1/2
               -translate-y-1/2
+              cursor-pointer
               items-center
               justify-center
               rounded-full
@@ -207,21 +303,30 @@ export default function Roulette({
               border-white/20
               bg-[#23262A]
               text-sm
+              font-black
+              text-white
               shadow-xl
-              cursor-pointer
-          "
-        >
-          {spinning ? "Spinning" : "Spin"}
-        </button>
+              transition
+              hover:scale-105
+              hover:bg-gray-200
+              hover:text-black
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              disabled:hover:scale-100
+            "
+          >
+            {spinning ? "Spinning" : "Spin"}
+          </button>
         </div>
 
-        {/* BOTÃO */}
-        
+        {/* CONTADOR */}
 
         <p className="mt-3 text-sm text-gray-500">
           {items.length} mídias na roleta
         </p>
       </div>
+
+      {/* MODAL DO VENCEDOR */}
 
       <ResultModal
         item={winner}
@@ -230,6 +335,10 @@ export default function Roulette({
     </>
   );
 }
+
+/* ================================================= */
+/* ITEM DA ROLETA                                    */
+/* ================================================= */
 
 function WheelItem({
   item,
@@ -240,23 +349,21 @@ function WheelItem({
   angle: number;
   sliceAngle: number;
 }) {
-  /*
-   * Cada item ocupa uma fatia da roda.
-   *
-   * O conteúdo é girado para dentro da fatia e depois
-   * compensamos a rotação para que texto/imagem fiquem
-   * visualmente na orientação correta.
-   */
-
   const radius = 42;
 
   return (
     <div
-      className="absolute left-1/2 top-1/2"
+      className="
+        absolute
+        left-1/2
+        top-1/2
+      "
       style={{
         width: `${sliceAngle}deg`,
         height: "50%",
+
         transformOrigin: "50% 100%",
+
         transform: `
           translate(-50%, -100%)
           rotate(${angle}deg)
@@ -264,12 +371,22 @@ function WheelItem({
       }}
     >
       <div
-        className="absolute left-1/2 top-2 flex -translate-x-1/2 flex-col items-center"
+        className="
+          absolute
+          left-1/2
+          top-2
+          flex
+          -translate-x-1/2
+          flex-col
+          items-center
+        "
         style={{
           transform: `translateY(-${radius / 2}px)`,
           width: "90px",
         }}
       >
+        {/* THUMBNAIL */}
+
         {item.media.image ? (
           <div className="relative h-16 w-12 overflow-hidden rounded-md border-2 border-white/40 shadow-lg">
             <Image
@@ -286,15 +403,26 @@ function WheelItem({
           </div>
         )}
 
+        {/* AVATAR */}
+
         {item.avatar ? (
           <Image
             src={item.avatar}
             width={24}
             height={24}
             alt=""
-            className="mt-1 h-6 w-6 rounded-full border border-white/50"
+            className="
+              mt-1
+              h-6
+              w-6
+              rounded-full
+              border
+              border-white/50
+            "
           />
         ) : null}
+
+        {/* TÍTULO */}
 
         <span
           className="
@@ -310,7 +438,16 @@ function WheelItem({
           {item.media.title}
         </span>
 
-        <span className="max-w-[90px] truncate text-[9px] text-gray-300">
+        {/* USUÁRIO */}
+
+        <span
+          className="
+            max-w-[90px]
+            truncate
+            text-[9px]
+            text-gray-300
+          "
+        >
           {item.username}
         </span>
       </div>

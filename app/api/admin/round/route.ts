@@ -22,7 +22,6 @@ async function getAdmin() {
 
   return users[0];
 }
-
 export async function POST(request: Request) {
   try {
     const admin = await getAdmin();
@@ -35,7 +34,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
     const type = body.type;
 
     if (type !== "filme" && type !== "video") {
@@ -45,6 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verifica se já existe uma rodada aberta
     const openRound = await sql`
       SELECT id
       FROM rounds
@@ -59,6 +58,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // Nova rodada começando:
+    // apaga os submissions das rodadas anteriores
+    await sql`
+      DELETE FROM submissions
+    `;
+
+    // Cria a nova rodada
     const result = await sql`
       INSERT INTO rounds (
         status,
@@ -80,7 +86,6 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error(error);
 
@@ -123,7 +128,6 @@ export async function PATCH() {
       message: "Rodada fechada.",
       round: result[0],
     });
-
   } catch (error) {
     console.error(error);
 
@@ -133,7 +137,6 @@ export async function PATCH() {
     );
   }
 }
-
 
 export async function GET() {
   try {

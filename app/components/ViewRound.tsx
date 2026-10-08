@@ -93,7 +93,7 @@ export default function ViewRound() {
           </div>
 
         </div>
-      ): ""}
+      ): "Nenhuma rodada aberta"}
 
     </div>
   );
