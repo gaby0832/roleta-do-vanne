@@ -45,74 +45,115 @@ export default function Roulette({
   const sliceAngle =
     sliceCount > 0 ? 360 / sliceCount : 360;
 
-  function spin() {
-    if (spinning || items.length === 0) {
-      return;
-    }
-
-    setWinner(null);
-    setSpinning(true);
-
-    /*
-     * Escolhe o vencedor antes da animação.
-     */
-    const winnerIndex = Math.floor(
-      Math.random() * items.length
-    );
-
-    const selected = items[winnerIndex];
-
-    /*
-     * O CENTRO da fatia selecionada.
-     *
-     * 2 itens:
-     *
-     * item 0 = 90°  -> direita
-     * item 1 = 270° -> esquerda
-     *
-     * A seta está no topo.
-     */
-    const targetAngle =
-      winnerIndex * sliceAngle +
-      sliceAngle / 2;
-
-    /*
-     * Muitas voltas antes de parar.
-     */
-    const fullSpins = 8 * 360;
-
-    /*
-     * Rotação atual normalizada.
-     */
-    const currentRotation =
-      ((rotation % 360) + 360) % 360;
-
-    /*
-     * Queremos levar o centro da fatia
-     * vencedora para o topo.
-     */
-    let correction =
-      -targetAngle - currentRotation;
-
-    correction =
-      ((correction % 360) + 360) % 360;
-
-    const finalRotation =
-      rotation +
-      fullSpins +
-      correction;
-
-    setRotation(finalRotation);
-
-    /*
-     * Tem que ser exatamente igual
-     * à duração da animação.
-     */
-    setTimeout(() => {
-      setSpinning(false);
-      setWinner(selected);
-    }, SPIN_DURATION);
+async function spin() {
+  if (spinning || items.length === 0) {
+    return;
   }
+
+  setWinner(null);
+  setSpinning(true);
+
+  /*
+   * Escolhe o vencedor.
+   */
+  const winnerIndex = Math.floor(
+    Math.random() * items.length
+  );
+
+  const selected = items[winnerIndex];
+
+  /*
+   * Descobre se é a mídia 1 ou mídia 2
+   * daquela submission.
+   */
+  const slot =
+    selected.id.endsWith("-2")
+      ? 2
+      : 1;
+
+  /*
+   * Centro da fatia vencedora.
+   */
+  const targetAngle =
+    winnerIndex * sliceAngle +
+    sliceAngle / 2;
+
+  /*
+   * Número de voltas completas.
+   */
+  const fullSpins = 8 * 360;
+
+  /*
+   * Rotação atual.
+   */
+  const currentRotation =
+    ((rotation % 360) + 360) % 360;
+
+  /*
+   * Faz a fatia vencedora parar
+   * exatamente na seta.
+   */
+  let correction =
+    -targetAngle - currentRotation;
+
+  correction =
+    ((correction % 360) + 360) % 360;
+
+  const finalRotation =
+    rotation +
+    fullSpins +
+    correction;
+
+  setRotation(finalRotation);
+
+  /*
+   * Espera os 10 segundos da animação.
+   */
+  setTimeout(async () => {
+    setSpinning(false);
+
+    setWinner(selected);
+
+    /*
+     * Anuncia no Discord.
+     */
+    try {
+      const response = await fetch(
+        "/api/admin/announce-winner",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            submissionId:
+              selected.submissionId,
+
+            slot,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const data =
+          await response.json();
+
+        console.error(
+          "Erro ao anunciar vencedor:",
+          data
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Erro ao anunciar vencedor no Discord:",
+        error
+      );
+    }
+  }, SPIN_DURATION);
+}
 
   if (items.length === 0) {
     return (
