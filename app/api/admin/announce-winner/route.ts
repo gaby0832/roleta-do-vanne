@@ -236,7 +236,9 @@ export async function POST(request: Request) {
       title: "🏆 VENCEDOR DA ROLETA!",
       description:
         `A mídia **${media.title}** foi selecionada!`,
-      color: 0xffd700,
+      color: media.type === "filme"
+            ? 0xa743ff
+            : 0xff0001,
 
       fields,
 
