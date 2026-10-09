@@ -1,20 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
-import { Participant } from "./types";
-import { auth } from "@/lib/auth";
+import { Participant } from "./roulette/types";
 
 type ParticipantListProps = {
   participants: Participant[];
-  onRemove: (id: string) => void;
-  removingId: string | null;
 };
 
-export default function ParticipantList({
+export default function ViewParticipants({
   participants,
-  onRemove,
-  removingId,
 }: ParticipantListProps) {
 
 
@@ -22,7 +16,7 @@ export default function ParticipantList({
 
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
+    <div className="w-full h-full flex flex-col">
       <div className="mb-3 w-full flex items-center justify-between">
         <h2 className="text-lg font-bold text-white">
           Participantes
@@ -80,29 +74,6 @@ export default function ParticipantList({
                   </span>
                 </div>
               </div>
-
-              <button
-                onClick={() => onRemove(participant.id)}
-                disabled={removingId === participant.id}
-                className="
-                  flex
-                  h-9
-                  w-9
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-lg
-                  text-red-400
-                  transition
-                  hover:bg-red-500/10
-                  hover:text-red-300
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                "
-                title="Remover participante"
-              >
-                <Trash2 size={18} />
-              </button>
             </div>
           ))
         )}

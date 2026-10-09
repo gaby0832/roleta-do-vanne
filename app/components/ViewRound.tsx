@@ -42,7 +42,8 @@ export default function ViewRound() {
 
   if (loading) {
     return (
-      <div className="bg-[#23262A] rounded-2xl p-6">
+      <div className="bg-[#23262A] 
+      mb-2 rounded-2xl p-6">
         Carregando rodada...
       </div>
     );
@@ -93,7 +94,35 @@ export default function ViewRound() {
           </div>
 
         </div>
-      ): "Nenhuma rodada aberta"}
+      ): (
+          <div className="flex flex-col gap-5 ">
+
+          <div className="flex justify-between items-center">
+
+            <div>
+
+              <p className="text-gray-400">
+                Rodada fechada
+              </p>
+
+            </div>
+
+            <span className="
+              px-3
+              py-1
+              rounded-full
+              bg-red-500/20
+              text-red-400
+              text-sm
+              font-bold
+            ">
+              FECHADA
+            </span>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

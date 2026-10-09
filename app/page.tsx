@@ -15,7 +15,7 @@ export default async function Home() {
   }
   
   return (
-    <main className="flex h-screen flex-col">
+    <main className="flex h-full flex-col">
       <div className="w-full flex gap-3 justify-between items-center h-20 px-5 bg-[#23262A]">
         <div className="flex gap-3 justify-start items-center">
 
@@ -37,9 +37,10 @@ export default async function Home() {
         </div>
       </div>
 
-      <div className="w-full px-10 md:px-0 flex flex-col justify-center items-center">
+      <div className="w-full h-full px-5 md:px-0 flex flex-col justify-center items-center">
         <Form/>
       </div>
+
     </main>
   );
 }

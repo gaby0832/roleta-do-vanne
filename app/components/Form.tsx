@@ -1,9 +1,12 @@
 "use client";
 
 import { Film, Play } from "lucide-react";
-import { SubmitEvent, useState } from "react";
+import { SubmitEvent, useState, useEffect } from "react";
 import Input, { Midia } from "./Input";
 import ViewRound from "./ViewRound";
+
+import ViewParticipants from "./ViewParticipants";
+import { Participant } from "./roulette/types";
 
 export default function Form() {
   const [submitMode, setSubmitMode] = useState<string>("filme");
@@ -13,6 +16,69 @@ export default function Form() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+
+  const [participants, setParticipants] = useState<Participant[]>([]);
+
+    async function loadSubmissions() {
+    try {
+      const response = await fetch(
+        "/api/submissions",
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        console.error(
+          "Erro ao buscar submissions:",
+          response.status
+        );
+
+        return;
+      }
+
+      const data: SubmissionResponse[] =
+        await response.json();
+
+      const formatted: Participant[] = data.map(
+        (submission) => ({
+          id: submission.id,
+
+          username: submission.username,
+
+          avatar: submission.avatar,
+
+          midia1: {
+            id: submission.midia1_id,
+            title: submission.midia1_title,
+            type: submission.midia1_type,
+            image: submission.midia1_poster_path,
+            author: submission.midia1_author,
+            youtuber: submission.midia1_youtuber,
+          },
+
+          midia2: {
+            id: submission.midia2_id,
+            title: submission.midia2_title,
+            type: submission.midia2_type,
+            image: submission.midia2_poster_path,
+            author: submission.midia2_author,
+            youtuber: submission.midia2_youtuber,
+          },
+        })
+      );
+
+      setParticipants(formatted);
+    } catch (error) {
+      console.error(
+        "Erro ao buscar submissions:",
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handlerSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -69,12 +135,40 @@ export default function Form() {
     }
   }
 
+    useEffect(() => {
+    loadSubmissions();
+
+    /*
+     * Atualiza a lista a cada 5 segundos.
+     *
+     * Depois podemos trocar isso por Supabase Realtime
+     * ou WebSocket.
+     */
+    const interval = setInterval(
+      loadSubmissions,
+      5000
+    );
+
+    return () => clearInterval(interval);
+  }, []);
+
+
   return (
-    <div className="w-full py-6 md:w-1/2 flex flex-col">
+    <div className="w-full h-full flex md:flex-row flex-col justify-center items-center gap-4 p-6">
+  
 
-      <ViewRound/>
+   
+      <div className="w-full h-full md:w-1/2 flex flex-col">
 
-      <div className="flex">
+
+
+         <ViewRound/>
+
+      <div className="flex w-full">
+
+
+
+     
 
 
         <button
@@ -84,7 +178,7 @@ export default function Form() {
             setMidia1([]);
             setMidia2([]);
           }}
-          className={`p-5 w-full h-full transition-all
+          className={`p-5 h-[70px] w-full transition-all
           bg-[#23262A] rounded-tl-lg inline-flex justify-center items-center gap-2 cursor-pointer
           ${submitMode === "filme" ? "bg-[#151719]" : ""}`}
         >
@@ -99,8 +193,8 @@ export default function Form() {
             setMidia1([]);
             setMidia2([]);
           }}
-          className={`p-5 transition-all
-          w-full h-full bg-[#23262A] rounded-tr-lg inline-flex justify-center items-center gap-2 cursor-pointer
+          className={`p-5 h-[70px] transition-all
+          w-full bg-[#23262A] rounded-tr-lg inline-flex justify-center items-center gap-2 cursor-pointer
           ${submitMode === "video" ? "bg-[#151719]" : ""}`}
         >
           <Play size="20" />
@@ -110,7 +204,7 @@ export default function Form() {
       </div>
 
       <form
-        className="px-5 py-5 flex flex-col w-full h-full bg-[#23262A] gap-5 rounded-b-lg justify-center items-center"
+        className="px-5 py-5 flex flex-col w-full h-full bg-[#23262A] gap-5 rounded-b-lg"
         onSubmit={handlerSubmit}
       >
 
@@ -156,5 +250,14 @@ export default function Form() {
 
       </form>
     </div>
+
+       <div className="flex flex-col md:w-1/2 w-full md:h-[560px] jusfify-start">
+
+      <ViewParticipants
+          participants={participants}
+        />
+
+    </div>
+  </div>
   );
 }
