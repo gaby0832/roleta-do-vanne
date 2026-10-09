@@ -8,6 +8,27 @@ import ViewRound from "./ViewRound";
 import ViewParticipants from "./ViewParticipants";
 import { Participant } from "./roulette/types";
 
+type SubmissionResponse = {
+  id: string;
+
+  username: string;
+  avatar: string | null;
+
+  midia1_id: string;
+  midia1_title: string;
+  midia1_type: "filme" | "video";
+  midia1_poster_path: string | null;
+  midia1_author: string | null;
+  midia1_youtuber: string | null;
+
+  midia2_id: string;
+  midia2_title: string;
+  midia2_type: "filme" | "video";
+  midia2_poster_path: string | null;
+  midia2_author: string | null;
+  midia2_youtuber: string | null;
+};
+
 export default function Form() {
   const [submitMode, setSubmitMode] = useState<string>("filme");
 
