@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ResultModal from "./RouletteModal";
 import { Participant, RouletteItem } from "./types";
 
@@ -9,18 +9,25 @@ type RouletteProps = {
   participants: Participant[];
 };
 
-const SPIN_DURATION = 10000;
+const SPIN_DURATION = 12000;
 
-export default function Roulette({
-  participants,
-}: RouletteProps) {
+export default function Roulette({ participants }: RouletteProps) {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<RouletteItem | null>(null);
 
-  /*
-   * Cada pessoa gera duas opções.
-   */
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* Limpa o timer ao desmontar. */
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  /* Cada pessoa gera duas opções (índice par = mídia 1, ímpar = mídia 2). */
   const items = useMemo<RouletteItem[]>(() => {
     return participants.flatMap((participant) => [
       {
@@ -41,119 +48,64 @@ export default function Roulette({
   }, [participants]);
 
   const sliceCount = items.length;
+  const sliceAngle = sliceCount > 0 ? 360 / sliceCount : 360;
 
-  const sliceAngle =
-    sliceCount > 0 ? 360 / sliceCount : 360;
+  function spin() {
+    if (spinning || items.length === 0) {
+      return;
+    }
 
-async function spin() {
-  if (spinning || items.length === 0) {
-    return;
-  }
+    setWinner(null);
+    setSpinning(true);
 
-  setWinner(null);
-  setSpinning(true);
+    const winnerIndex = Math.floor(Math.random() * items.length);
+    const selected = items[winnerIndex];
 
-  /*
-   * Escolhe o vencedor.
-   */
-  const winnerIndex = Math.floor(
-    Math.random() * items.length
-  );
+    /* Índice par = mídia 1, ímpar = mídia 2. */
+    const slot = winnerIndex % 2 === 0 ? 1 : 2;
 
-  const selected = items[winnerIndex];
+    /* Centro da fatia vencedora. */
+    const targetAngle = winnerIndex * sliceAngle + sliceAngle / 2;
 
-  /*
-   * Descobre se é a mídia 1 ou mídia 2
-   * daquela submission.
-   */
-  const slot =
-    selected.id.endsWith("-2")
-      ? 2
-      : 1;
+    const fullSpins = 8 * 360;
+    const currentRotation = ((rotation % 360) + 360) % 360;
 
-  /*
-   * Centro da fatia vencedora.
-   */
-  const targetAngle =
-    winnerIndex * sliceAngle +
-    sliceAngle / 2;
+    /* Faz o centro da fatia vencedora parar exatamente na seta. */
+    let correction = -targetAngle - currentRotation;
+    correction = ((correction % 360) + 360) % 360;
 
-  /*
-   * Número de voltas completas.
-   */
-  const fullSpins = 8 * 360;
+    setRotation(rotation + fullSpins + correction);
 
-  /*
-   * Rotação atual.
-   */
-  const currentRotation =
-    ((rotation % 360) + 360) % 360;
+    timeoutRef.current = setTimeout(async () => {
+      setSpinning(false);
+      setWinner(selected);
 
-  /*
-   * Faz a fatia vencedora parar
-   * exatamente na seta.
-   */
-  let correction =
-    -targetAngle - currentRotation;
-
-  correction =
-    ((correction % 360) + 360) % 360;
-
-  const finalRotation =
-    rotation +
-    fullSpins +
-    correction;
-
-  setRotation(finalRotation);
-
-  /*
-   * Espera os 10 segundos da animação.
-   */
-  setTimeout(async () => {
-    setSpinning(false);
-
-    setWinner(selected);
-
-    /*
-     * Anuncia no Discord.
-     */
-    try {
-      const response = await fetch(
-        "/api/admin/announce-winner",
-        {
+      try {
+        const response = await fetch("/api/admin/announce-winner", {
           method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            submissionId:
-              selected.submissionId,
-
+            submissionId: selected.submissionId,
             slot,
           }),
+        });
+
+        if (!response.ok) {
+          let data: unknown = null;
+
+          try {
+            data = await response.json();
+          } catch {
+            data = await response.text().catch(() => null);
+          }
+
+          console.error("Erro ao anunciar vencedor:", data);
         }
-      );
-
-      if (!response.ok) {
-        const data =
-          await response.json();
-
-        console.error(
-          "Erro ao anunciar vencedor:",
-          data
-        );
+      } catch (error) {
+        console.error("Erro ao anunciar vencedor no Discord:", error);
       }
-    } catch (error) {
-      console.error(
-        "Erro ao anunciar vencedor no Discord:",
-        error
-      );
-    }
-  }, SPIN_DURATION);
-}
+    }, SPIN_DURATION);
+  }
 
   if (items.length === 0) {
     return (
@@ -163,8 +115,7 @@ async function spin() {
         </p>
 
         <p className="mt-2 text-sm text-gray-500">
-          Aguarde os participantes enviarem suas
-          recomendações.
+          Aguarde os participantes enviarem suas recomendações.
         </p>
       </div>
     );
@@ -173,106 +124,33 @@ async function spin() {
   return (
     <>
       <div className="flex w-full flex-col items-center">
-        {/* ========================================= */}
-        {/* ROLETA                                    */}
-        {/* ========================================= */}
-
         <div className="relative aspect-square w-full max-w-[650px]">
-          {/* ======================================= */}
-          {/* SETA                                    */}
-          {/* ======================================= */}
-
-          <div
-            className="
-              absolute
-              left-1/2
-              top-[-8px]
-              z-40
-              -translate-x-1/2
-            "
-          >
-            <div
-              className="
-                h-0
-                w-0
-                border-l-[18px]
-                border-r-[18px]
-                border-t-[35px]
-                border-l-transparent
-                border-r-transparent
-                border-t-white
-                drop-shadow-lg
-              "
-            />
+          {/* SETA */}
+          <div className="absolute left-1/2 top-[-8px] z-40 -translate-x-1/2">
+            <div className="h-0 w-0 border-l-[18px] border-r-[18px] border-t-[35px] border-l-transparent border-r-transparent border-t-white drop-shadow-lg" />
           </div>
 
-          {/* ======================================= */}
-          {/* RODA                                    */}
-          {/* ======================================= */}
-
+          {/* RODA */}
           <div
-            className="
-              absolute
-              inset-0
-              overflow-hidden
-              rounded-full
-              border-[8px]
-              border-white/10
-              bg-[#202327]
-              shadow-2xl
-            "
+            className="absolute inset-0 overflow-hidden rounded-full border-[8px] border-white/10 bg-[#202327] shadow-2xl"
             style={{
               transform: `rotate(${rotation}deg)`,
-
-              transition: spinning
-                ? `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.8, 0.2, 1)`
-                : "none",
+              /* Sempre definida: evita o "pulo" no fim do giro. */
+              transition: `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.8, 0.2, 1)`,
             }}
           >
-            {/* ===================================== */}
-            {/* DIVISÕES DA PIZZA                    */}
-            {/* ===================================== */}
-
+            {/* DIVISÕES */}
             <svg
-              className="
-                pointer-events-none
-                absolute
-                inset-0
-                z-30
-                h-full
-                w-full
-              "
+              className="pointer-events-none absolute inset-0 z-[-1] h-full w-full"
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
             >
               {items.map((item, index) => {
-                /*
-                 * A divisão é a BORDA entre duas fatias.
-                 *
-                 * Não adicionamos metade do ângulo aqui.
-                 *
-                 * 2 itens:
-                 *
-                 * index 0 = 0°
-                 * index 1 = 180°
-                 *
-                 * As duas linhas formam uma única
-                 * linha vertical passando pelo centro.
-                 */
+                const angle = index * sliceAngle;
+                const radians = (angle * Math.PI) / 180;
 
-                const angle =
-                  index * sliceAngle;
-
-                const radians =
-                  (angle * Math.PI) / 180;
-
-                const x =
-                  50 +
-                  50 * Math.sin(radians);
-
-                const y =
-                  50 -
-                  50 * Math.cos(radians);
+                const x = 50 + 50 * Math.sin(radians);
+                const y = 50 - 50 * Math.cos(radians);
 
                 return (
                   <line
@@ -282,97 +160,39 @@ async function spin() {
                     x2={x}
                     y2={y}
                     stroke="rgba(255,255,255,0.25)"
-                    strokeWidth="0.35"
+                    strokeWidth="0.15"
                   />
                 );
               })}
             </svg>
 
-            {/* ===================================== */}
-            {/* CONTEÚDO DAS FATIAS                  */}
-            {/* ===================================== */}
-
-            {items.map((item, index) => {
-              /*
-               * O conteúdo fica no CENTRO da fatia.
-               *
-               * 2 itens:
-               *
-               * item 0 = 90°  -> direita
-               * item 1 = 270° -> esquerda
-               */
-
-              const angle =
-                index * sliceAngle +
-                sliceAngle / 2;
-
-              return (
-                <WheelItem
-                  key={item.id}
-                  item={item}
-                  angle={angle}
-                  sliceAngle={sliceAngle}
-                />
-              );
-            })}
+            {/* CONTEÚDO DAS FATIAS */}
+            {items.map((item, index) => (
+              <WheelItem
+                key={item.id}
+                item={item}
+                angle={index * sliceAngle + sliceAngle / 2}
+                sliceAngle={sliceAngle}
+              />
+            ))}
           </div>
 
-          {/* ======================================= */}
-          {/* BOTÃO CENTRAL                           */}
-          {/* ======================================= */}
-
+          {/* BOTÃO CENTRAL */}
           <button
             onClick={spin}
-            disabled={
-              spinning || items.length === 0
-            }
-            className="
-              absolute
-              left-1/2
-              top-1/2
-              z-40
-              flex
-              h-20
-              w-20
-              -translate-x-1/2
-              -translate-y-1/2
-              cursor-pointer
-              items-center
-              justify-center
-              rounded-full
-              border-4
-              border-white/20
-              bg-[#23262A]
-              text-sm
-              font-black
-              text-white
-              shadow-xl
-              transition
-              hover:scale-105
-              hover:bg-gray-200
-              hover:text-black
-              disabled:cursor-not-allowed
-              disabled:opacity-40
-              disabled:hover:scale-100
-            "
+            disabled={spinning || items.length === 0}
+            className="absolute left-1/2 top-1/2 z-40 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-1 border-white/20 bg-[#23262A] text-sm font-black text-white shadow-xl transition hover:scale-105 hover:bg-gray-200 hover:text-black disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
           >
             {spinning ? "Spinning" : "Spin"}
           </button>
         </div>
-
-        {/* CONTADOR */}
 
         <p className="mt-3 text-sm text-gray-500">
           {items.length} mídias na roleta
         </p>
       </div>
 
-      {/* MODAL DO VENCEDOR */}
-
-      <ResultModal
-        item={winner}
-        onClose={() => setWinner(null)}
-      />
+      <ResultModal item={winner} onClose={() => setWinner(null)} />
     </>
   );
 }
@@ -380,6 +200,10 @@ async function spin() {
 /* ================================================= */
 /* ITEM DA ROLETA                                    */
 /* ================================================= */
+
+const ITEM_WIDTH = 90;
+/* Raio aproximado (px) onde fica o conteúdo, numa roda de 650px. */
+const CONTENT_RADIUS = 260;
 
 function WheelItem({
   item,
@@ -390,46 +214,33 @@ function WheelItem({
   angle: number;
   sliceAngle: number;
 }) {
-  const radius = 42;
+  /* Reduz o conteúdo quando há muitas fatias, para não sobrepor. */
+  const arcLength = (2 * Math.PI * CONTENT_RADIUS * sliceAngle) / 360;
+  const scale = Math.min(1, Math.max(0.35, arcLength / ITEM_WIDTH));
 
   return (
     <div
-      className="
-        absolute
-        left-1/2
-        top-1/2
-      "
+      className="absolute left-1/2 top-1/2"
       style={{
-        width: `${sliceAngle}deg`,
+        width: 0,
         height: "50%",
-
         transformOrigin: "50% 100%",
-
-        transform: `
-          translate(-50%, -100%)
-          rotate(${angle}deg)
-        `,
+        transform: `translate(-50%, -100%) rotate(${angle}deg)`,
       }}
     >
       <div
-        className="
-          absolute
-          left-1/2
-          top-2
-          flex
-          -translate-x-1/2
-          flex-col
-          items-center
-        "
+        className="absolute left-0 flex flex-col items-center"
         style={{
-          transform: `translateY(-${radius / 2}px)`,
-          width: "90px",
+          top: 12,
+          width: `${ITEM_WIDTH}px`,
+          transformOrigin: "top center",
+          /* translateX no próprio transform, para não ser sobrescrito. */
+          transform: `translateX(-50%) scale(${scale})`,
         }}
       >
         {/* THUMBNAIL */}
-
         {item.media.image ? (
-          <div className="relative h-16 w-12 overflow-hidden rounded-md border-2 border-white/40 shadow-lg">
+          <div className="relative h-16 w-12 overflow-hidden rounded-md shadow-lg">
             <Image
               src={item.media.image}
               alt={item.media.title}
@@ -445,50 +256,23 @@ function WheelItem({
         )}
 
         {/* AVATAR */}
-
         {item.avatar ? (
           <Image
             src={item.avatar}
             width={24}
             height={24}
             alt=""
-            className="
-              mt-1
-              h-6
-              w-6
-              rounded-full
-              border
-              border-white/50
-            "
+            className="mt-1 h-6 w-6 rounded-full"
           />
         ) : null}
 
         {/* TÍTULO */}
-
-        <span
-          className="
-            mt-1
-            max-w-[90px]
-            truncate
-            text-center
-            text-[10px]
-            font-bold
-            text-white
-          "
-        >
+        <span className="mt-1 max-w-[90px] truncate text-center text-[10px] font-bold text-white">
           {item.media.title}
         </span>
 
         {/* USUÁRIO */}
-
-        <span
-          className="
-            max-w-[90px]
-            truncate
-            text-[9px]
-            text-gray-300
-          "
-        >
+        <span className="max-w-[90px] truncate text-[9px] text-gray-300">
           {item.username}
         </span>
       </div>

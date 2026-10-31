@@ -165,7 +165,7 @@ export default function AdminRoulette() {
     <div className="flex w-full py-30 h-full flex-col gap-8 lg:flex-row">
       {/* ROLETA */}
 
-      <div className="flex min-w-0 flex-1 items-center justify-center">
+      <div className="flex min-w-0 flex-2 items-center justify-center">
         <Roulette
           participants={participants}
         />
